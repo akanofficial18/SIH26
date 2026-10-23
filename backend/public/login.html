@@ -1,0 +1,1756 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Secure Login | AICTE Approval &amp; Compliance Portal</title>
+    <link rel="icon" type="image/png" href="/assets/favicon.png">
+
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+
+    <!-- Font Awesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700;800&family=Source+Serif+4:wght@600;700;800&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+
+    <!-- MediaPipe Libraries for Hands & Face Mesh -->
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/camera_utils/camera_utils.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/hands/hands.js" crossorigin="anonymous"></script>
+    <script src="https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/face_mesh.js" crossorigin="anonymous"></script>
+
+    <!-- Futuristic HUD Styling -->
+    <style>
+        body {
+            font-family: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif;
+            background-color: #030712;
+            color: #f3f4f6;
+        }
+
+        /* AICTE typography: Inter for UI text, Source Serif 4 for headings (same pairing as the portal dashboard) */
+        .font-orbitron, body .font-mono {
+            font-family: 'Inter', 'Noto Sans Devanagari', system-ui, sans-serif !important;
+            letter-spacing: 0 !important;
+        }
+        body .font-mono { font-variant-numeric: tabular-nums; }
+        #main-title, h1.font-orbitron, h2.font-orbitron, h3.font-orbitron {
+            font-family: 'Source Serif 4', Georgia, 'Noto Sans Devanagari', serif !important;
+            font-weight: 700;
+        }
+        .aicte-brand { display:flex; align-items:center; gap:10px; text-decoration:none; }
+        .aicte-brand img { height: 40px; width: 40px; object-fit: contain; background:#fff; border-radius:50%; padding:2px; }
+        .aicte-brand b { display:block; font-family:'Source Serif 4',Georgia,serif; font-size:17px; color:#fff; line-height:1.1; }
+        .aicte-brand small { display:block; font-size:10.5px; color:#fdba74; font-weight:600; letter-spacing:.04em; text-transform:uppercase; }
+        .tricolour { position:fixed; top:0; left:0; right:0; height:4px; z-index:60; background:linear-gradient(90deg,#f58220 0 50%,#138808 50% 100%); }
+
+        /* Glassmorphism Card Style */
+        .glass-card {
+            background: rgba(15, 23, 42, 0.78);
+            backdrop-filter: blur(16px);
+            -webkit-backdrop-filter: blur(16px);
+            border: 1px solid rgba(56, 189, 248, 0.28);
+            box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.65);
+            transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+        }
+
+        .glass-card:hover, .glass-card.hover-active {
+            border-color: rgba(56, 189, 248, 0.9);
+            box-shadow: 0 0 25px rgba(56, 189, 248, 0.5), inset 0 0 15px rgba(56, 189, 248, 0.2);
+            transform: translateY(-2px);
+        }
+
+        /* HUD Laser Scan Line */
+        .scan-line {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 3px;
+            background: linear-gradient(90deg, transparent, #38bdf8, transparent);
+            box-shadow: 0 0 12px #38bdf8;
+            animation: scan 2.2s infinite linear;
+        }
+
+        @keyframes scan {
+            0% { top: 0%; opacity: 0.7; }
+            50% { opacity: 1; }
+            100% { top: 100%; opacity: 0.7; }
+        }
+
+        /* Video element mirroring */
+        .mirror-video {
+            transform: scaleX(-1);
+        }
+
+        /* Progress Circle for Gesture Hover Selection */
+        .progress-ring-circle {
+            transition: stroke-dashoffset 0.08s linear;
+            transform: rotate(-90deg);
+            transform-origin: 50% 50%;
+        }
+
+        /* Custom Scrollbar */
+        ::-webkit-scrollbar {
+            width: 5px;
+        }
+        ::-webkit-scrollbar-track {
+            background: #090d16;
+        }
+        ::-webkit-scrollbar-thumb {
+            background: #1e293b;
+            border-radius: 3px;
+        }
+        ::-webkit-scrollbar-thumb:hover {
+            background: #38bdf8;
+        }
+    </style>
+</head>
+<body class="h-screen max-h-screen overflow-y-auto bg-slate-950 text-slate-100 flex flex-col justify-between relative select-none">
+    <div class="tricolour"></div>
+
+    <!-- LIVE WEBCAM FEED & AR HUD OVERLAY (BACKGROUND LAYER) -->
+    <div class="fixed inset-0 z-0 bg-slate-950 flex items-center justify-center pointer-events-none">
+        <!-- Live Camera Stream -->
+        <video id="webcam" class="w-full h-full object-cover mirror-video opacity-40" autoplay playsinline muted></video>
+
+        <!-- Dynamic AR Canvas for Skeletal Hands & Facial Landmarks -->
+        <canvas id="ar-canvas" class="fixed inset-0 w-full h-full object-cover z-10 pointer-events-none"></canvas>
+
+        <!-- Sci-Fi Grid Overlay -->
+        <div class="fixed inset-0 bg-[radial-gradient(circle_at_center,transparent_25%,#030712_92%)] z-10 pointer-events-none"></div>
+        <div class="fixed inset-0 bg-[linear-gradient(to_right,#1e293b15_1px,transparent_1px),linear-gradient(to_bottom,#1e293b15_1px,transparent_1px)] bg-[size:3.5rem_3.5rem] z-10 pointer-events-none"></div>
+    </div>
+
+    <!-- MAIN APP WRAPPER (OPTIMIZED TO FIT LAPTOP SCREENS EXACTLY) -->
+    <div id="app-container" class="relative z-20 flex flex-col h-full min-h-screen lg:min-h-0 lg:h-screen justify-between p-2 md:p-4 max-w-7xl mx-auto w-full">
+
+        <!-- TOP NAVIGATION & STATUS BAR -->
+        <header class="flex flex-wrap justify-between items-center gap-2 bg-slate-900/80 backdrop-blur-md border border-cyan-500/30 px-3.5 py-2 rounded-xl shadow-lg flex-shrink-0">
+            <div class="flex items-center space-x-2.5">
+                <a href="/" class="aicte-brand" title="Back to AICTE home"><img src="/assets/aicte-logo.png" alt="AICTE logo"></a>
+                <div>
+                    <h1 class="font-orbitron text-base md:text-lg font-bold leading-tight text-white">
+                        AICTE Portal <span class="text-[10px] px-1.5 py-0.5 rounded border border-orange-400/50 text-orange-300 font-mono">Secure Login</span>
+                    </h1>
+                    <p class="text-[11px] text-slate-400 font-mono flex items-center gap-1.5 leading-none mt-0.5">
+                        <span id="cam-indicator" class="w-2 h-2 rounded-full bg-emerald-400 animate-pulse"></span>
+                        <span id="cam-status-text">INITIALIZING CAMERA...</span>
+                    </p>
+                </div>
+            </div>
+
+            <!-- Mode Switcher Tabs (Login vs New User Registration) -->
+            <div id="nav-mode-container" class="flex items-center bg-slate-950/80 p-1 rounded-lg border border-slate-800">
+                <button id="btn-tab-login" onclick="setAuthMode('login')" class="px-3.5 py-1.5 rounded-md text-xs font-orbitron font-semibold transition-all duration-200 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm">
+                    <i class="fa-solid fa-right-to-bracket mr-1.5"></i>LOGIN
+                </button>
+                <button id="btn-tab-register" onclick="setAuthMode('register')" class="px-3.5 py-1.5 rounded-md text-xs font-orbitron font-semibold text-slate-400 hover:text-white transition-all duration-200">
+                    <i class="fa-solid fa-user-plus mr-1.5"></i>NEW REGISTRATION
+                </button>
+            </div>
+
+            <!-- Telemetry, DB Status & Gmail SMTP config -->
+            <div class="flex items-center space-x-2 text-xs font-mono text-slate-300">
+                <div class="hidden sm:flex items-center gap-1.5 bg-slate-950/60 px-2.5 py-1 rounded-md border border-slate-800">
+                    <i class="fa-solid fa-hand text-cyan-400 text-xs"></i>
+                    <span class="text-[11px]">HAND:</span>
+                    <span id="stat-hand-detect" class="text-red-400 font-bold text-[11px]">NO HAND</span>
+                </div>
+                <div class="hidden sm:flex items-center gap-1.5 bg-slate-950/60 px-2.5 py-1 rounded-md border border-slate-800">
+                    <i class="fa-solid fa-face-smile text-cyan-400 text-xs"></i>
+                    <span class="text-[11px]">FACE:</span>
+                    <span id="stat-face-detect" class="text-red-400 font-bold text-[11px]">NO FACE</span>
+                </div>
+                <!-- SQLite Users Modal Button -->
+                <button onclick="openUsersModal()" class="flex items-center gap-1.5 bg-cyan-950/40 hover:bg-cyan-900/50 px-2.5 py-1 rounded-md border border-cyan-500/40 text-cyan-300 transition-all text-xs">
+                    <i class="fa-solid fa-database text-cyan-400"></i>
+                    <span>DB (<span id="stat-user-count">0</span>)</span>
+                </button>
+                <!-- Gmail SMTP Settings Modal Button -->
+                <button onclick="openSmtpModal()" id="btn-smtp-indicator" class="flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 px-2.5 py-1 rounded-md border border-amber-500/40 text-amber-300 transition-all text-xs" title="Configure Real Gmail OTP Delivery">
+                    <i class="fa-solid fa-envelope text-amber-400"></i>
+                    <span id="smtp-badge-text">GMAIL SMTP</span>
+                </button>
+            </div>
+        </header>
+
+        <!-- MAIN INTERACTIVE DISPLAY AREA (FLEX GROW, FIT SCREEN) -->
+        <main class="my-auto py-2 flex flex-col items-center justify-center flex-grow">
+
+            <!-- STEP BREADCRUMBS INDICATOR -->
+            <div id="step-indicator" class="flex items-center gap-2 mb-2 text-xs font-mono">
+                <div id="step-badge-1" class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-bold text-[11px]">
+                    <span>1.</span> IDENTIFY
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-600 text-[9px]"></i>
+                <div id="step-badge-2" class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-500 text-[11px]">
+                    <span>2.</span> GESTURE SELECT
+                </div>
+                <i class="fa-solid fa-chevron-right text-slate-600 text-[9px]"></i>
+                <div id="step-badge-3" class="flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-500 text-[11px]">
+                    <span>3.</span> AUTHENTICATE
+                </div>
+            </div>
+
+            <!-- INSTRUCTION HEADER -->
+            <div class="text-center mb-3 max-w-xl">
+                <h2 id="main-title" class="font-orbitron text-xl md:text-2xl font-extrabold tracking-wide text-white drop-shadow-md leading-tight">
+                    Biometric Authentication Portal
+                </h2>
+                <p id="main-subtitle" class="text-slate-300 mt-0.5 text-xs md:text-sm flex items-center justify-center gap-1.5">
+                    Enter your email to initiate your biometric session
+                </p>
+            </div>
+
+            <!-- STAGE CONTAINER (MULTI-STEP FLOW) -->
+            <div id="stage-container" class="w-full max-w-4xl flex flex-col items-center justify-center">
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- STEP 1: INITIAL CREDENTIALS INPUT (EMAIL & NAME)          -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div id="view-step-credentials" class="w-full max-w-md glass-card rounded-2xl p-5 md:p-6 relative">
+                    <div class="text-center mb-3">
+                        <div class="w-11 h-11 rounded-xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mx-auto mb-1.5 text-cyan-400">
+                            <i id="cred-icon" class="fa-solid fa-id-card text-xl"></i>
+                        </div>
+                        <h3 id="cred-title" class="font-orbitron text-lg md:text-xl font-bold text-white">Enter Your Details</h3>
+                        <p id="cred-subtitle" class="text-slate-400 text-xs mt-0.5">Provide identification to proceed to gesture selection</p>
+                    </div>
+
+                    <form id="form-credentials" onsubmit="handleCredentialsProceed(event)" class="space-y-3">
+                        <!-- Full Name Field (Shown for Registration) -->
+                        <div id="group-input-name" class="space-y-1">
+                            <label class="text-[11px] font-mono text-cyan-300 block">FULL NAME</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-user absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                                <input type="text" id="input-full-name" placeholder="Your Name" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 pl-9 pr-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-all font-sans">
+                            </div>
+                        </div>
+
+                        <!-- Email Address Field -->
+                        <div class="space-y-1">
+                            <label class="text-[11px] font-mono text-cyan-300 block">EMAIL ADDRESS</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-envelope absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                                <input type="email" id="input-email-address" required placeholder="user@gmail.com" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 pl-9 pr-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-all font-sans">
+                            </div>
+                        </div>
+
+
+                        <!-- Registration type + type-specific fields (register mode only) -->
+                        <div id="group-reg-type" class="hidden space-y-3">
+                            <div class="space-y-1">
+                                <label class="text-[11px] font-mono text-cyan-300 block">REGISTER AS</label>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <button type="button" id="btn-reg-institution" onclick="setRegType('institution')" class="py-2 rounded-xl border text-xs font-semibold transition-all"><i class="fa-solid fa-building-columns mr-1.5"></i>Institution</button>
+                                    <button type="button" id="btn-reg-member" onclick="setRegType('member')" class="py-2 rounded-xl border text-xs font-semibold transition-all"><i class="fa-solid fa-user-tie mr-1.5"></i>AICTE Member</button>
+                                </div>
+                                <p id="reg-type-hint" class="text-[10px] text-slate-400 leading-snug"></p>
+                            </div>
+
+                            <div id="fields-institution" class="space-y-3">
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-mono text-cyan-300 block">INSTITUTION NAME *</label>
+                                    <input type="text" id="reg-inst-name" maxlength="160" placeholder="e.g. Sunrise College of Engineering" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-400 font-sans">
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="space-y-1">
+                                        <label class="text-[11px] font-mono text-cyan-300 block">AICTE / PERMANENT ID</label>
+                                        <input type="text" id="reg-inst-aicte" maxlength="40" placeholder="Optional" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[11px] font-mono text-cyan-300 block">CONTACT PHONE</label>
+                                        <input type="tel" id="reg-inst-phone" maxlength="20" placeholder="Optional" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans">
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-mono text-cyan-300 block">AUTHORIZED SIGNATORY (PRINCIPAL / DIRECTOR)</label>
+                                    <input type="text" id="reg-inst-contact" maxlength="80" placeholder="Optional" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans">
+                                </div>
+                            </div>
+
+                            <div id="fields-member" class="hidden space-y-3">
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-mono text-cyan-300 block">MEMBER ROLE *</label>
+                                    <select id="reg-mem-role" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans"></select>
+                                </div>
+                                <div class="grid grid-cols-2 gap-2">
+                                    <div class="space-y-1">
+                                        <label class="text-[11px] font-mono text-cyan-300 block">EMPLOYEE / MEMBER ID *</label>
+                                        <input type="text" id="reg-mem-empid" maxlength="40" placeholder="e.g. AICTE-EVC-1042" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans">
+                                    </div>
+                                    <div class="space-y-1">
+                                        <label class="text-[11px] font-mono text-cyan-300 block">REGION</label>
+                                        <select id="reg-mem-region" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans"></select>
+                                    </div>
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-mono text-cyan-300 block">DESIGNATION</label>
+                                    <input type="text" id="reg-mem-designation" maxlength="100" placeholder="e.g. Professor, IIT Bombay" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans">
+                                </div>
+                                <div class="space-y-1">
+                                    <label class="text-[11px] font-mono text-cyan-300 block">ORGANISATION / OFFICE</label>
+                                    <input type="text" id="reg-mem-org" maxlength="120" placeholder="Optional" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none font-sans">
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Quick 1-Glance Face Unlock button (for login mode) -->
+                        <div id="quick-unlock-banner" class="hidden pt-1">
+                            <button type="button" onclick="launchDirectFaceUnlock()" class="w-full py-1.5 px-3 rounded-lg border border-cyan-500/40 bg-cyan-950/30 hover:bg-cyan-900/40 text-cyan-300 text-xs font-mono flex items-center justify-center gap-1.5 transition-all">
+                                <i class="fa-solid fa-bolt text-cyan-400"></i> DIRECT 1-GLANCE FACE UNLOCK
+                            </button>
+                        </div>
+
+                        <!-- Continue Button -->
+                        <button type="submit" id="btn-proceed-gesture" class="w-full py-2.5 rounded-xl font-orbitron font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/30 transition-all mt-2 flex items-center justify-center gap-2 cursor-pointer">
+                            <span>PROCEED TO GESTURE SELECTION</span>
+                            <i class="fa-solid fa-arrow-right text-[11px]"></i>
+                        </button>
+                    </form>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- STEP 2: GESTURE SELECTION CARDS (HOVER WITH FINGER TIP)     -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div id="view-step-gesture-cards" class="hidden flex flex-col items-center w-full">
+                    
+                    <!-- Selected user preview chip -->
+                    <div class="mb-3 inline-flex items-center gap-2 px-3.5 py-1 rounded-full bg-slate-900/80 border border-cyan-500/40 text-xs font-mono text-slate-300">
+                        <span class="text-slate-400">TARGET:</span>
+                        <span id="chip-user-name" class="text-cyan-300 font-bold">User</span>
+                        <span class="text-slate-500">•</span>
+                        <span id="chip-user-email" class="text-slate-400">email</span>
+                        <button onclick="backToStep(1)" class="ml-1 text-slate-400 hover:text-white transition-colors" title="Edit details">
+                            <i class="fa-solid fa-pen-to-square"></i>
+                        </button>
+                    </div>
+
+                    <!-- TWO CARDS COMPACT GRID (PERFECT FIT FOR LAPTOP VIEWPORT) -->
+                    <div class="grid grid-cols-1 md:grid-cols-2 gap-5 w-full max-w-3xl px-2">
+
+                        <!-- CARD 1: FACE OPTION -->
+                        <div id="card-option-face" onclick="handleCardSelection('face')" class="interactive-card glass-card relative rounded-2xl p-5 md:p-6 flex flex-col items-center justify-center cursor-pointer group">
+                            <!-- Gesture Radial Loading Ring Overlay -->
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30 opacity-0 progress-overlay transition-opacity duration-150">
+                                <svg class="w-28 h-28">
+                                    <circle class="text-slate-800/80" stroke-width="6" stroke="currentColor" fill="transparent" r="46" cx="56" cy="56"/>
+                                    <circle class="progress-ring-circle text-cyan-400" stroke-width="6" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" stroke="currentColor" fill="transparent" r="46" cx="56" cy="56"/>
+                                </svg>
+                                <span class="absolute font-mono text-xs font-bold text-cyan-300 progress-percent">0%</span>
+                            </div>
+
+                            <!-- Scan Line Graphic -->
+                            <div class="scan-line rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                            <!-- Card Icon -->
+                            <div class="w-16 h-16 rounded-xl bg-cyan-500/10 border border-cyan-400/30 flex items-center justify-center mb-3 text-cyan-400 group-hover:scale-105 group-hover:bg-cyan-500/20 transition-all duration-200">
+                                <i class="fa-solid fa-id-card-clip text-3xl"></i>
+                            </div>
+
+                            <!-- Card Titles -->
+                            <h3 id="card-face-title" class="font-orbitron text-lg font-bold text-white mb-1 tracking-wide text-center">Face Biometrics</h3>
+                            <p id="card-face-desc" class="text-slate-300 text-xs text-center line-clamp-2 px-2">Fast facial landmark recognition to authenticate your identity.</p>
+
+                            <!-- Visual Touch Zone Indicator -->
+                            <div class="mt-4 px-3 py-1 rounded-full bg-cyan-500/20 border border-cyan-400/40 text-cyan-300 text-[11px] font-mono flex items-center gap-1.5">
+                                <i class="fa-solid fa-hand-pointer animate-pulse"></i> POINT FINGER TIP HERE
+                            </div>
+                        </div>
+
+                        <!-- CARD 2: PASSWORD / OTP OPTION -->
+                        <div id="card-option-password" onclick="handleCardSelection('password')" class="interactive-card glass-card relative rounded-2xl p-5 md:p-6 flex flex-col items-center justify-center cursor-pointer group">
+                            <!-- Gesture Radial Loading Ring Overlay -->
+                            <div class="absolute inset-0 flex items-center justify-center pointer-events-none z-30 opacity-0 progress-overlay transition-opacity duration-150">
+                                <svg class="w-28 h-28">
+                                    <circle class="text-slate-800/80" stroke-width="6" stroke="currentColor" fill="transparent" r="46" cx="56" cy="56"/>
+                                    <circle class="progress-ring-circle text-blue-500" stroke-width="6" stroke-dasharray="289.02" stroke-dashoffset="289.02" stroke-linecap="round" stroke="currentColor" fill="transparent" r="46" cx="56" cy="56"/>
+                                </svg>
+                                <span class="absolute font-mono text-xs font-bold text-blue-300 progress-percent">0%</span>
+                            </div>
+
+                            <!-- Scan Line Graphic -->
+                            <div class="scan-line rounded-t-2xl opacity-0 group-hover:opacity-100 transition-opacity"></div>
+
+                            <!-- Card Icon -->
+                            <div class="w-16 h-16 rounded-xl bg-blue-500/10 border border-blue-400/30 flex items-center justify-center mb-3 text-blue-400 group-hover:scale-105 group-hover:bg-blue-500/20 transition-all duration-200">
+                                <i class="fa-solid fa-shield-halved text-3xl"></i>
+                            </div>
+
+                            <!-- Card Titles -->
+                            <h3 id="card-pass-title" class="font-orbitron text-lg font-bold text-white mb-1 tracking-wide text-center">Password & OTP</h3>
+                            <p id="card-pass-desc" class="text-slate-300 text-xs text-center line-clamp-2 px-2">Authenticate securely with password or real 6-digit email OTP.</p>
+
+                            <!-- Visual Touch Zone Indicator -->
+                            <div class="mt-4 px-3 py-1 rounded-full bg-blue-500/20 border border-blue-400/40 text-blue-300 text-[11px] font-mono flex items-center gap-1.5">
+                                <i class="fa-solid fa-hand-pointer animate-pulse"></i> POINT FINGER TIP HERE
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- STEP 3A: FACE SCANNER HUD (REGISTER OR VERIFY)            -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div id="view-face-scanner" class="hidden w-full max-w-md glass-card rounded-2xl p-5 text-center relative flex flex-col items-center">
+                    <button onclick="backToStep(2)" class="absolute top-4 left-4 text-slate-400 hover:text-white transition-colors" title="Back to Options">
+                        <i class="fa-solid fa-arrow-left text-base"></i>
+                    </button>
+
+                    <h3 id="face-scanner-title" class="font-orbitron text-lg font-bold text-white mb-0.5">Scanning Facial Mesh</h3>
+                    <p id="face-scanner-desc" class="text-slate-300 text-xs mb-3">Align your face inside the target frame</p>
+
+                    <!-- Target HUD Frame with live camera feed preview -->
+                    <div id="face-target-frame" class="relative w-52 h-52 my-1 border-2 border-cyan-400/50 rounded-2xl flex items-center justify-center overflow-hidden bg-slate-900/60 shadow-inner">
+                        <div class="scan-line"></div>
+
+                        <!-- Target Corners -->
+                        <div class="absolute top-2.5 left-2.5 w-5 h-5 border-t-2 border-l-2 border-cyan-400"></div>
+                        <div class="absolute top-2.5 right-2.5 w-5 h-5 border-t-2 border-r-2 border-cyan-400"></div>
+                        <div class="absolute bottom-2.5 left-2.5 w-5 h-5 border-b-2 border-l-2 border-cyan-400"></div>
+                        <div class="absolute bottom-2.5 right-2.5 w-5 h-5 border-b-2 border-r-2 border-cyan-400"></div>
+
+                        <!-- Live Mini Face Canvas Overlay -->
+                        <canvas id="face-hud-canvas" class="absolute inset-0 w-full h-full object-cover mirror-video pointer-events-none z-10"></canvas>
+
+                        <!-- Silhouette Icon Fallback -->
+                        <i class="fa-solid fa-face-viewfinder text-6xl text-cyan-400/30 animate-pulse"></i>
+
+                        <!-- Match Confidence Meter -->
+                        <div class="absolute bottom-2 left-3 right-3 bg-slate-950/90 p-2 rounded-lg border border-slate-800 z-20">
+                            <div class="flex justify-between text-[10px] font-mono mb-1 text-slate-300">
+                                <span>BIOMETRIC MATCH</span>
+                                <span id="face-match-percent" class="text-cyan-300 font-bold">0%</span>
+                            </div>
+                            <div class="w-full h-2 bg-slate-800 rounded-full overflow-hidden">
+                                <div id="face-match-bar" class="h-full bg-gradient-to-r from-cyan-400 to-blue-500 w-0 transition-all duration-200"></div>
+                            </div>
+                        </div>
+                    </div>
+
+                    <p id="face-scan-status-msg" class="text-xs font-mono text-cyan-300 mt-2.5">
+                        <i class="fa-solid fa-circle-notch fa-spin mr-1"></i> DETECTING FACIAL MESH...
+                    </p>
+
+                    <!-- Manual Action Trigger Button -->
+                    <button id="btn-manual-face-action" onclick="executeFaceCaptureAction()" class="mt-3 w-full py-2.5 rounded-xl font-orbitron text-xs font-bold border border-cyan-400/60 bg-gradient-to-r from-cyan-500/30 to-blue-600/30 hover:from-cyan-500/50 hover:to-blue-600/50 text-cyan-200 transition-all shadow-md">
+                        <i class="fa-solid fa-camera mr-2"></i>CAPTURE & ENROLL FACE
+                    </button>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- STEP 3B: PASSWORD / OTP VERIFICATION FORM                 -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div id="view-password-otp-form" class="hidden w-full max-w-md glass-card rounded-2xl p-5 relative">
+                    <button onclick="backToStep(2)" class="absolute top-4 left-4 text-slate-400 hover:text-white transition-colors" title="Back to Options">
+                        <i class="fa-solid fa-arrow-left text-base"></i>
+                    </button>
+
+                    <h3 id="pass-form-title" class="font-orbitron text-lg font-bold text-center text-white mb-0.5">Security Credentials</h3>
+                    <p id="pass-form-subtitle" class="text-slate-300 text-xs text-center mb-3">Enter password or use 6-digit email OTP</p>
+
+                    <form id="auth-credentials-form" onsubmit="handleAuthSubmit(event)" class="space-y-3">
+                        <!-- Password Field -->
+                        <div class="space-y-1">
+                            <label class="text-[11px] font-mono text-cyan-300 block">ACCOUNT PASSWORD</label>
+                            <div class="relative">
+                                <i class="fa-solid fa-key absolute left-3.5 top-3 text-slate-400 text-xs"></i>
+                                <input type="password" id="input-auth-password" placeholder="••••••••" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 pl-9 pr-3 text-sm text-white focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-all font-sans">
+                            </div>
+                        </div>
+
+                        <!-- Divider -->
+                        <div class="relative flex py-1 items-center">
+                            <div class="flex-grow border-t border-slate-800"></div>
+                            <span class="flex-shrink mx-3 text-slate-500 font-mono text-[10px]">OR VERIFY WITH ONE-TIME CODE</span>
+                            <div class="flex-grow border-t border-slate-800"></div>
+                        </div>
+
+                        <!-- OTP Section -->
+                        <div class="space-y-1.5">
+                            <div class="flex items-center justify-between">
+                                <label class="text-[11px] font-mono text-cyan-300">ONE-TIME CODE (OTP)</label>
+                                <button type="button" id="btn-request-otp" onclick="requestOTP()" class="text-xs font-mono text-cyan-400 hover:text-cyan-300 hover:underline focus:outline-none transition-colors">
+                                    <i class="fa-solid fa-paper-plane mr-1"></i>[ SEND CODE ]
+                                </button>
+                            </div>
+                            <div class="relative">
+                                <input type="text" id="input-auth-otp" maxlength="6" placeholder="6-DIGIT CODE" class="w-full text-center tracking-widest font-mono bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 text-base text-cyan-300 focus:outline-none focus:ring-1 focus:ring-cyan-400 transition-all">
+                            </div>
+                            <div id="otp-alert-box" class="p-2 rounded-lg bg-slate-900/70 border border-slate-800 text-[11px] text-slate-400 text-center">
+                                Click <strong class="text-cyan-400">[ SEND CODE ]</strong> to dispatch OTP to your email.
+                            </div>
+                        </div>
+
+                        <!-- Submit Button -->
+                        <button type="submit" id="btn-submit-credentials" class="w-full py-2.5 rounded-xl font-orbitron font-bold text-xs bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white shadow-md shadow-cyan-500/25 transition-all mt-2">
+                            VERIFY & UNLOCK
+                        </button>
+                    </form>
+                </div>
+
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <!-- STEP 4: AUTHENTICATED DASHBOARD (ACCESS GRANTED)          -->
+                <!-- ═══════════════════════════════════════════════════════════ -->
+                <div id="view-dashboard" class="hidden w-full max-w-2xl glass-card rounded-2xl p-5 relative">
+                    <div class="flex flex-col sm:flex-row items-center gap-4 border-b border-slate-800 pb-4 mb-4">
+                        <div class="relative flex-shrink-0">
+                            <div class="w-16 h-16 rounded-full bg-gradient-to-tr from-cyan-500 to-blue-600 flex items-center justify-center text-2xl text-white font-bold border-2 border-cyan-400 shadow-md">
+                                <span id="dash-avatar-initial">U</span>
+                            </div>
+                            <span class="absolute bottom-0 right-0 w-5 h-5 rounded-full bg-emerald-500 border-2 border-slate-900 flex items-center justify-center text-[10px]">
+                                <i class="fa-solid fa-check text-white"></i>
+                            </span>
+                        </div>
+
+                        <div class="text-center sm:text-left flex-1">
+                            <div class="inline-flex items-center gap-1.5 px-2.5 py-0.5 rounded-full bg-emerald-500/20 border border-emerald-500/40 text-emerald-300 text-[11px] font-mono mb-1">
+                                <i class="fa-solid fa-shield-halved"></i> ACCESS GRANTED - SESSION ACTIVE
+                            </div>
+                            <h2 id="dash-user-name" class="font-orbitron text-lg md:text-xl font-bold text-white">Welcome, User</h2>
+                            <p id="dash-user-email" class="text-slate-400 text-xs">user@gmail.com</p>
+                        </div>
+
+                        <button id="btn-enter-portal" onclick="goToPortal()" class="px-4 py-2 rounded-xl bg-gradient-to-r from-orange-500 to-amber-500 hover:from-orange-400 hover:to-amber-400 text-slate-950 text-xs font-orbitron font-bold transition-all shadow-md">
+                            ENTER AICTE PORTAL <i class="fa-solid fa-arrow-right ml-1.5"></i>
+                        </button>
+                        <button onclick="logoutSession()" class="px-4 py-2 rounded-xl border border-red-500/40 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-orbitron font-bold transition-all">
+                            <i class="fa-solid fa-power-off mr-1.5"></i>LOGOUT
+                        </button>
+                    </div>
+
+                    <!-- Security Insights Telemetry -->
+                    <div class="grid grid-cols-1 sm:grid-cols-3 gap-3 mb-4">
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                            <p class="text-[10px] font-mono text-slate-400">AUTH METHOD</p>
+                            <p id="dash-auth-method" class="font-orbitron text-sm font-bold text-cyan-400 mt-0.5">FACIAL MESH</p>
+                        </div>
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                            <p class="text-[10px] font-mono text-slate-400">DATABASE STATUS</p>
+                            <p class="font-orbitron text-sm font-bold text-emerald-400 mt-0.5">SQLITE SYNCED</p>
+                        </div>
+                        <div class="bg-slate-900/60 p-3 rounded-xl border border-slate-800">
+                            <p class="text-[10px] font-mono text-slate-400">SESSION TOKEN</p>
+                            <p id="dash-session-id" class="font-mono text-[11px] font-bold text-slate-300 mt-0.5 truncate">0x9F82...4A</p>
+                        </div>
+                    </div>
+
+                    <!-- Biometric Re-Calibration Action Box -->
+                    <div class="p-3.5 rounded-xl border border-cyan-500/30 bg-cyan-950/20 flex flex-col sm:flex-row items-center justify-between gap-3">
+                        <div class="text-center sm:text-left">
+                            <p class="font-orbitron text-xs font-bold text-cyan-300">Biometric Template Management</p>
+                            <p class="text-[11px] text-slate-400 mt-0.5">Enrolled face enables direct 1-glance facial unlocking next time.</p>
+                        </div>
+                        <button onclick="enrollFaceFromDashboard()" class="px-3.5 py-1.5 rounded-lg bg-cyan-500/20 hover:bg-cyan-500/30 text-cyan-300 text-xs font-mono font-bold border border-cyan-400/40 transition-all flex-shrink-0">
+                            <i class="fa-solid fa-camera mr-1"></i> RE-ENROLL FACE
+                        </button>
+                    </div>
+                </div>
+
+            </div>
+        </main>
+
+        <!-- FOOTER & TECH SPECS (SLIM & CLEAN) -->
+        <footer class="flex flex-wrap justify-between items-center gap-2 pt-2 border-t border-slate-900/80 text-[11px] font-mono text-slate-500 flex-shrink-0">
+            <div>
+                <i class="fa-solid fa-shield text-cyan-400 mr-1"></i> SQLite Encrypted Biometric Store
+            </div>
+            <div class="flex items-center gap-3">
+                <span>MediaPipe Hands & FaceMesh</span>
+                <span>•</span>
+                <span id="backend-status" class="text-emerald-400 font-bold">SQLITE ACTIVE</span>
+            </div>
+        </footer>
+
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- MODAL 1: SQLITE DATABASE USERS REGISTRY                         -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="modal-users" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 hidden">
+        <div class="glass-card rounded-2xl w-full max-w-2xl p-5 border border-cyan-500/40 flex flex-col max-h-[85vh]">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-database text-cyan-400 text-lg"></i>
+                    <h3 class="font-orbitron text-base font-bold text-white">SQLite Database Registry</h3>
+                </div>
+                <button onclick="closeUsersModal()" class="text-slate-400 hover:text-white text-base">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="overflow-y-auto my-3 flex-grow max-h-[55vh]">
+                <table class="w-full text-left text-xs font-mono">
+                    <thead class="text-slate-400 border-b border-slate-800 bg-slate-950/60 sticky top-0">
+                        <tr>
+                            <th class="p-2">ID</th>
+                            <th class="p-2">NAME</th>
+                            <th class="p-2">EMAIL</th>
+                            <th class="p-2">FACE PROFILE</th>
+                            <th class="p-2">PASS HASH</th>
+                        </tr>
+                    </thead>
+                    <tbody id="table-users-body" class="divide-y divide-slate-800/60 text-slate-300">
+                        <!-- Populated by JS -->
+                    </tbody>
+                </table>
+            </div>
+
+            <div class="flex justify-between items-center pt-2 border-t border-slate-800 text-[11px] text-slate-400 font-mono">
+                <span>Persisted in <code class="text-cyan-400">backend/data/auth.db</code></span>
+                <button onclick="fetchDatabaseUsers()" class="px-3 py-1 bg-cyan-950 hover:bg-cyan-900 border border-cyan-500/30 rounded text-cyan-300 text-xs">
+                    <i class="fa-solid fa-arrows-rotate mr-1"></i> Refresh
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- MODAL 2: GMAIL SMTP CONFIGURATION (REAL LIVE OTP DELIVERY)      -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <div id="modal-smtp" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-md flex items-center justify-center p-3 hidden">
+        <div class="glass-card rounded-2xl w-full max-w-lg p-5 border border-cyan-500/40 flex flex-col">
+            <div class="flex justify-between items-center pb-3 border-b border-slate-800">
+                <div class="flex items-center gap-2">
+                    <i class="fa-solid fa-envelope-circle-check text-cyan-400 text-lg"></i>
+                    <h3 class="font-orbitron text-base font-bold text-white">Gmail SMTP Dispatch Config</h3>
+                </div>
+                <button onclick="closeSmtpModal()" class="text-slate-400 hover:text-white text-base">
+                    <i class="fa-solid fa-xmark"></i>
+                </button>
+            </div>
+
+            <div class="my-3 space-y-3 text-xs">
+                <div id="smtp-status-banner" class="p-2.5 rounded-xl bg-amber-950/30 border border-amber-500/40 text-amber-200">
+                    <div class="font-bold flex items-center gap-1.5">
+                        <i class="fa-solid fa-circle-info text-amber-400"></i> Current Mode: Virtual / Simulated
+                    </div>
+                    <p class="text-[11px] text-slate-300 mt-1">
+                        To receive live verification codes directly in your real Gmail inbox, enter your Gmail address and 16-character Google App Password below.
+                    </p>
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[11px] font-mono text-cyan-300 block">SENDER GMAIL ADDRESS</label>
+                    <input type="email" id="smtp-input-user" placeholder="your_email@gmail.com" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white focus:outline-none">
+                </div>
+
+                <div class="space-y-1">
+                    <label class="text-[11px] font-mono text-cyan-300 block">16-CHARACTER GOOGLE APP PASSWORD</label>
+                    <input type="password" id="smtp-input-pass" placeholder="xxxx xxxx xxxx xxxx" class="w-full bg-slate-900/90 border border-slate-700 focus:border-cyan-400 rounded-xl py-2 px-3 text-sm text-white font-mono focus:outline-none">
+                </div>
+
+                <!-- 3-step Instructions -->
+                <div class="p-2.5 bg-slate-900/80 rounded-xl border border-slate-800 text-[11px] text-slate-400 space-y-1">
+                    <div class="text-cyan-300 font-bold font-mono">How to get a Google App Password (30 seconds):</div>
+                    <ol class="list-decimal pl-4 space-y-0.5">
+                        <li>Visit <a href="https://myaccount.google.com/apppasswords" target="_blank" class="text-cyan-400 underline">myaccount.google.com/apppasswords</a></li>
+                        <li>Give it an App name (e.g. "Biometric Auth") and click Create.</li>
+                        <li>Copy the 16-character password and paste it above!</li>
+                    </ol>
+                </div>
+            </div>
+
+            <div class="flex justify-end gap-2 pt-2 border-t border-slate-800">
+                <button type="button" onclick="closeSmtpModal()" class="px-3.5 py-1.5 rounded-lg border border-slate-700 text-slate-400 hover:text-white text-xs">
+                    Close
+                </button>
+                <button type="button" id="btn-save-smtp" onclick="saveSmtpConfig()" class="px-4 py-1.5 rounded-lg bg-gradient-to-r from-cyan-500 to-blue-600 hover:from-cyan-400 hover:to-blue-500 text-white font-orbitron font-bold text-xs shadow-md">
+                    VERIFY & SAVE
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- HUD TOAST NOTIFICATION CONTAINER -->
+    <div id="toast-container" class="fixed bottom-5 right-5 z-50 flex flex-col gap-2 pointer-events-none max-w-sm"></div>
+
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <!-- APPLICATION LOGIC & MEDIAPIPE TRACKING                          -->
+    <!-- ═══════════════════════════════════════════════════════════════ -->
+    <script>
+        // Global App State
+        window.appState = {
+            currentMode: 'login',    // 'login' or 'register'
+            currentStep: 1,          // 1: identify, 2: gesture-cards, 3: scanner/otp, 4: dashboard
+            selectedMethod: null,    // 'face' or 'password'
+            userData: {
+                name: '',
+                email: ''
+            },
+            regType: 'institution',  // 'institution' | 'member'
+            regProfile: {},          // extra registration fields sent with the sign-up request
+            authenticatedUser: null,
+            authToken: null,
+            cursor: { x: -100, y: -100, active: false },
+            handLandmarks: null,
+            faceLandmarks: null,
+            hoverCard: null,
+            hoverStartTime: null,
+            hoverRequiredTime: 1200  // 1.2s hover triggers gesture selection
+        };
+
+        const videoElement = document.getElementById('webcam');
+        const canvasElement = document.getElementById('ar-canvas');
+        const canvasCtx = canvasElement.getContext('2d');
+        const faceHudCanvas = document.getElementById('face-hud-canvas');
+        const faceHudCtx = faceHudCanvas.getContext('2d');
+
+        let handsDetector = null;
+        let faceMeshDetector = null;
+
+        window.onload = async () => {
+            resizeCanvas();
+            window.addEventListener('resize', resizeCanvas);
+
+            // Check API Backend health, SMTP status & fetch users
+            checkBackendHealth();
+            { const q = new URLSearchParams(location.search).get('register'); if (q === 'institution' || q === 'member') { window.appState.regType = q; setAuthMode('register'); } }
+            checkSmtpStatus();
+            fetchDatabaseUsers();
+
+            // Setup camera & MediaPipe detectors
+            await setupWebcam();
+            initMediaPipe();
+
+            // Start dedicated animation render loop
+            requestAnimationFrame(renderARHud);
+            requestAnimationFrame(detectionWorkerLoop);
+        };
+
+        function resizeCanvas() {
+            canvasElement.width = window.innerWidth;
+            canvasElement.height = window.innerHeight;
+            if (faceHudCanvas) {
+                faceHudCanvas.width = 240;
+                faceHudCanvas.height = 240;
+            }
+        }
+
+        // WEBCAM INITIALIZATION
+        async function setupWebcam() {
+            try {
+                const stream = await navigator.mediaDevices.getUserMedia({
+                    video: { width: { ideal: 1280 }, height: { ideal: 720 }, facingMode: "user" }
+                });
+                videoElement.srcObject = stream;
+                document.getElementById('cam-status-text').innerText = 'CAMERA ACTIVE';
+                document.getElementById('cam-indicator').className = 'w-2 h-2 rounded-full bg-emerald-400 animate-pulse';
+            } catch (err) {
+                console.error("Webcam Access Error:", err);
+                document.getElementById('cam-status-text').innerText = 'CAMERA ACCESS DENIED';
+                document.getElementById('cam-indicator').className = 'w-2 h-2 rounded-full bg-red-400';
+                showToast("Please allow camera access for gesture & face detection.", "error");
+            }
+        }
+
+        // MEDIAPIPE INITIALIZATION
+        function initMediaPipe() {
+            try {
+                // Hand tracking
+                handsDetector = new Hands({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/hands/${file}`
+                });
+                handsDetector.setOptions({
+                    maxNumHands: 1,
+                    modelComplexity: 1,
+                    minDetectionConfidence: 0.55,
+                    minTrackingConfidence: 0.55
+                });
+                handsDetector.onResults(onHandResults);
+
+                // Face mesh tracking
+                faceMeshDetector = new FaceMesh({
+                    locateFile: (file) => `https://cdn.jsdelivr.net/npm/@mediapipe/face_mesh/${file}`
+                });
+                faceMeshDetector.setOptions({
+                    maxNumFaces: 1,
+                    refineLandmarks: true,
+                    minDetectionConfidence: 0.5,
+                    minTrackingConfidence: 0.5
+                });
+                faceMeshDetector.onResults(onFaceResults);
+            } catch (e) {
+                console.warn("MediaPipe Init Error:", e);
+            }
+        }
+
+        // DETECTION LOOP (RUNS ASYNC, THROTTLED TO ~25 FPS FOR PERFORMANCE)
+        let isDetecting = false;
+        let lastDetectTime = 0;
+        async function detectionWorkerLoop(timestamp) {
+            if (videoElement.readyState >= 2 && !isDetecting && (timestamp - lastDetectTime > 40)) {
+                isDetecting = true;
+                lastDetectTime = timestamp;
+                try {
+                    if (handsDetector) await handsDetector.send({ image: videoElement });
+                    if (faceMeshDetector) await faceMeshDetector.send({ image: videoElement });
+                } catch (e) {}
+                isDetecting = false;
+            }
+            requestAnimationFrame(detectionWorkerLoop);
+        }
+
+        // HAND TRACKING RESULTS CALLBACK
+        function onHandResults(results) {
+            const handDetectLabel = document.getElementById('stat-hand-detect');
+
+            if (results.multiHandLandmarks && results.multiHandLandmarks.length > 0) {
+                const landmarks = results.multiHandLandmarks[0];
+                window.appState.handLandmarks = landmarks;
+                handDetectLabel.innerText = "TRACKING";
+                handDetectLabel.className = "text-emerald-400 font-bold text-[11px]";
+
+                // INDEX FINGERTIP IS LANDMARK #8
+                const indexTip = landmarks[8];
+                // Mirror mapping X coordinate because video is scaleX(-1)
+                const cursorX = (1 - indexTip.x) * canvasElement.width;
+                const cursorY = indexTip.y * canvasElement.height;
+
+                window.appState.cursor = { x: cursorX, y: cursorY, active: true };
+
+                // Check card hover interaction if in Step 2 (Gesture Selection)
+                if (window.appState.currentStep === 2) {
+                    processCardHoverInteraction(cursorX, cursorY);
+                }
+            } else {
+                window.appState.handLandmarks = null;
+                window.appState.cursor.active = false;
+                handDetectLabel.innerText = "NO HAND";
+                handDetectLabel.className = "text-red-400 font-bold text-[11px]";
+                resetHoverProgress();
+            }
+        }
+
+        // FACE TRACKING RESULTS CALLBACK
+        function onFaceResults(results) {
+            const faceDetectLabel = document.getElementById('stat-face-detect');
+
+            if (results.multiFaceLandmarks && results.multiFaceLandmarks.length > 0) {
+                const faceLandmarks = results.multiFaceLandmarks[0];
+                window.appState.faceLandmarks = faceLandmarks;
+                faceDetectLabel.innerText = "DETECTED";
+                faceDetectLabel.className = "text-emerald-400 font-bold text-[11px]";
+
+                // Trigger evaluation tick if in Step 3 Face Scanner
+                if (window.appState.currentStep === 3 && window.appState.selectedMethod === 'face') {
+                    processFaceScanTick(faceLandmarks);
+                }
+            } else {
+                window.appState.faceLandmarks = null;
+                faceDetectLabel.innerText = "NO FACE";
+                faceDetectLabel.className = "text-red-400 font-bold text-[11px]";
+            }
+        }
+
+        // DEDICATED AR RENDERING LOOP (DRAWS HAND SKELETON + FACE MESH ONCE PER FRAME)
+        function renderARHud() {
+            canvasCtx.clearRect(0, 0, canvasElement.width, canvasElement.height);
+
+            // 1. Draw Hand Skeleton and Glowing Cursor if Hand is active
+            if (window.appState.handLandmarks) {
+                drawHandSkeleton(window.appState.handLandmarks);
+                if (window.appState.cursor.active) {
+                    drawGlowCursor(window.appState.cursor.x, window.appState.cursor.y);
+                }
+            }
+
+            // 2. Draw Face Mesh Landmarks on Main Screen
+            if (window.appState.faceLandmarks) {
+                drawFaceHUDMesh(window.appState.faceLandmarks);
+            }
+
+            // 3. Render Mini Face HUD Canvas in Step 3 if active
+            if (window.appState.currentStep === 3 && window.appState.selectedMethod === 'face' && faceHudCanvas) {
+                drawMiniFaceHUD();
+            }
+
+            requestAnimationFrame(renderARHud);
+        }
+
+        // CANVAS GRAPHICS: HAND SKELETON
+        function drawHandSkeleton(landmarks) {
+            const connections = [
+                [0,1],[1,2],[2,3],[3,4], // Thumb
+                [0,5],[5,6],[6,7],[7,8], // Index
+                [5,9],[9,10],[10,11],[11,12], // Middle
+                [9,13],[13,14],[14,15],[15,16], // Ring
+                [13,17],[17,18],[18,19],[19,20],[0,17] // Pinky & Palm
+            ];
+
+            canvasCtx.strokeStyle = 'rgba(56, 189, 248, 0.55)';
+            canvasCtx.lineWidth = 2.5;
+            connections.forEach(([i, j]) => {
+                const pt1 = landmarks[i];
+                const pt2 = landmarks[j];
+                canvasCtx.beginPath();
+                canvasCtx.moveTo((1 - pt1.x) * canvasElement.width, pt1.y * canvasElement.height);
+                canvasCtx.lineTo((1 - pt2.x) * canvasElement.width, pt2.y * canvasElement.height);
+                canvasCtx.stroke();
+            });
+
+            landmarks.forEach((pt, idx) => {
+                const x = (1 - pt.x) * canvasElement.width;
+                const y = pt.y * canvasElement.height;
+                canvasCtx.beginPath();
+                canvasCtx.arc(x, y, idx === 8 ? 6 : 3.5, 0, 2 * Math.PI);
+                canvasCtx.fillStyle = idx === 8 ? '#38bdf8' : 'rgba(16, 185, 129, 0.85)';
+                canvasCtx.fill();
+            });
+        }
+
+        // CANVAS GRAPHICS: GLOWING FINGERTIP CURSOR
+        function drawGlowCursor(x, y) {
+            // Outer halo
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 16, 0, 2 * Math.PI);
+            canvasCtx.fillStyle = 'rgba(56, 189, 248, 0.25)';
+            canvasCtx.fill();
+
+            // Inner core
+            canvasCtx.beginPath();
+            canvasCtx.arc(x, y, 7, 0, 2 * Math.PI);
+            canvasCtx.fillStyle = '#38bdf8';
+            canvasCtx.shadowColor = '#38bdf8';
+            canvasCtx.shadowBlur = 14;
+            canvasCtx.fill();
+            canvasCtx.shadowBlur = 0;
+
+            // Crosshair lines
+            canvasCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+            canvasCtx.lineWidth = 1.5;
+            canvasCtx.beginPath();
+            canvasCtx.moveTo(x - 18, y); canvasCtx.lineTo(x - 9, y);
+            canvasCtx.moveTo(x + 9, y); canvasCtx.lineTo(x + 18, y);
+            canvasCtx.moveTo(x, y - 18); canvasCtx.lineTo(x, y - 9);
+            canvasCtx.moveTo(x, y + 9); canvasCtx.lineTo(x, y + 18);
+            canvasCtx.stroke();
+        }
+
+        // CANVAS GRAPHICS: FULL SCREEN FACE MESH HUD
+        function drawFaceHUDMesh(landmarks) {
+            canvasCtx.fillStyle = 'rgba(6, 182, 212, 0.65)';
+
+            // Select 25 key facial outline landmarks
+            const keyPoints = [10, 33, 263, 152, 61, 291, 1, 199, 133, 362, 70, 300, 105, 334, 148, 377, 4, 19, 94, 168, 8, 14, 17, 0, 2];
+            keyPoints.forEach(idx => {
+                const pt = landmarks[idx];
+                if (!pt) return;
+                const x = (1 - pt.x) * canvasElement.width;
+                const y = pt.y * canvasElement.height;
+                canvasCtx.beginPath();
+                canvasCtx.arc(x, y, 2.5, 0, 2 * Math.PI);
+                canvasCtx.fill();
+            });
+        }
+
+        // MINI FACE HUD CANVAS (INSIDE TARGET FRAME IN STEP 3)
+        function drawMiniFaceHUD() {
+            faceHudCtx.clearRect(0, 0, faceHudCanvas.width, faceHudCanvas.height);
+            if (videoElement.readyState >= 2) {
+                faceHudCtx.drawImage(videoElement, 0, 0, faceHudCanvas.width, faceHudCanvas.height);
+            }
+
+            if (window.appState.faceLandmarks) {
+                faceHudCtx.strokeStyle = 'rgba(56, 189, 248, 0.8)';
+                faceHudCtx.fillStyle = '#38bdf8';
+                const keyPoints = [10, 33, 263, 152, 61, 291, 1, 199, 133, 362, 70, 300, 4, 168];
+                keyPoints.forEach(idx => {
+                    const pt = window.appState.faceLandmarks[idx];
+                    if (!pt) return;
+                    const x = (1 - pt.x) * faceHudCanvas.width;
+                    const y = pt.y * faceHudCanvas.height;
+                    faceHudCtx.beginPath();
+                    faceHudCtx.arc(x, y, 2, 0, 2 * Math.PI);
+                    faceHudCtx.fill();
+                });
+            }
+        }
+
+        // GESTURE FINGERTIP INTERACTION WITH CARDS
+        function processCardHoverInteraction(cursorX, cursorY) {
+            const cardFace = document.getElementById('card-option-face');
+            const cardPass = document.getElementById('card-option-password');
+
+            const rectFace = cardFace.getBoundingClientRect();
+            const rectPass = cardPass.getBoundingClientRect();
+
+            let activeCard = null;
+            let targetMethod = null;
+
+            if (isInsideRect(cursorX, cursorY, rectFace)) {
+                activeCard = cardFace;
+                targetMethod = 'face';
+            } else if (isInsideRect(cursorX, cursorY, rectPass)) {
+                activeCard = cardPass;
+                targetMethod = 'password';
+            }
+
+            if (activeCard) {
+                if (window.appState.hoverCard !== activeCard) {
+                    resetHoverProgress();
+                    window.appState.hoverCard = activeCard;
+                    window.appState.hoverStartTime = Date.now();
+                    activeCard.classList.add('hover-active');
+                } else {
+                    const elapsed = Date.now() - window.appState.hoverStartTime;
+                    const progress = Math.min(elapsed / window.appState.hoverRequiredTime, 1.0);
+
+                    updateProgressOverlay(activeCard, progress);
+
+                    if (progress >= 1.0) {
+                        // GESTURE SELECTION TRIGGERED!
+                        resetHoverProgress();
+                        playAudioChirp(780, 0.18);
+                        handleCardSelection(targetMethod);
+                    }
+                }
+            } else {
+                resetHoverProgress();
+            }
+        }
+
+        function isInsideRect(x, y, rect) {
+            return x >= rect.left && x <= rect.right && y >= rect.top && y <= rect.bottom;
+        }
+
+        function updateProgressOverlay(cardElement, progress) {
+            const overlay = cardElement.querySelector('.progress-overlay');
+            const circle = cardElement.querySelector('.progress-ring-circle');
+            const percentLabel = cardElement.querySelector('.progress-percent');
+
+            if (overlay && circle) {
+                overlay.style.opacity = '1';
+                const circumference = 289.02; // 2 * pi * r (r=46)
+                const offset = circumference - (progress * circumference);
+                circle.style.strokeDashoffset = offset;
+                if (percentLabel) {
+                    percentLabel.innerText = Math.round(progress * 100) + '%';
+                }
+            }
+        }
+
+        function resetHoverProgress() {
+            if (window.appState.hoverCard) {
+                window.appState.hoverCard.classList.remove('hover-active');
+                const overlay = window.appState.hoverCard.querySelector('.progress-overlay');
+                if (overlay) overlay.style.opacity = '0';
+            }
+            window.appState.hoverCard = null;
+            window.appState.hoverStartTime = null;
+        }
+
+        // AUDIO FEEDBACK SYNTHESIZER
+        function playAudioChirp(freq = 660, duration = 0.15) {
+            try {
+                const ctx = new (window.AudioContext || window.webkitAudioContext)();
+                const osc = ctx.createOscillator();
+                const gain = ctx.createGain();
+                osc.type = 'sine';
+                osc.frequency.setValueAtTime(freq, ctx.currentTime);
+                gain.gain.setValueAtTime(0.12, ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.001, ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(ctx.destination);
+                osc.start();
+                osc.stop(ctx.currentTime + duration);
+            } catch (e) {}
+        }
+    </script>
+
+    <!-- STEP NAVIGATION & BACKEND INTEGRATION SCRIPT -->
+    <script>
+        // MODE SWITCH: LOGIN vs REGISTER
+        function setAuthMode(mode) {
+            window.appState.currentMode = mode;
+            const btnLogin = document.getElementById('btn-tab-login');
+            const btnRegister = document.getElementById('btn-tab-register');
+            const nameGroup = document.getElementById('group-input-name');
+            const quickUnlock = document.getElementById('quick-unlock-banner');
+
+            if (mode === 'login') {
+                btnLogin.className = "px-3.5 py-1.5 rounded-md text-xs font-orbitron font-semibold transition-all duration-200 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm";
+                btnRegister.className = "px-3.5 py-1.5 rounded-md text-xs font-orbitron font-semibold text-slate-400 hover:text-white transition-all duration-200";
+
+                document.getElementById('cred-title').innerText = "Client Account Login";
+                document.getElementById('cred-subtitle').innerText = "Enter your email address to proceed to authentication";
+                nameGroup.classList.add('hidden');
+                document.getElementById('group-reg-type').classList.add('hidden');
+                quickUnlock.classList.remove('hidden');
+
+                document.getElementById('card-face-title').innerText = "Face Unlock";
+                document.getElementById('card-face-desc').innerText = "Match live facial features against your enrolled template in database.";
+                document.getElementById('card-pass-title').innerText = "Password / OTP Login";
+
+                document.getElementById('face-scanner-title').innerText = "Facial Biometric Unlock";
+                document.getElementById('face-scanner-desc').innerText = "Matching live face against enrolled backend templates...";
+                document.getElementById('btn-manual-face-action').innerText = "VERIFY & UNLOCK NOW";
+            } else {
+                btnRegister.className = "px-3.5 py-1.5 rounded-md text-xs font-orbitron font-semibold transition-all duration-200 bg-gradient-to-r from-cyan-500 to-blue-600 text-white shadow-sm";
+                btnLogin.className = "px-3.5 py-1.5 rounded-md text-xs font-orbitron font-semibold text-slate-400 hover:text-white transition-all duration-200";
+
+                document.getElementById('cred-title').innerText = "New User Registration";
+                document.getElementById('cred-subtitle').innerText = "Choose Institution or AICTE Member, then fill in your details";
+                nameGroup.classList.remove('hidden');
+                document.getElementById('group-reg-type').classList.remove('hidden');
+                setRegType(window.appState.regType);
+                quickUnlock.classList.add('hidden');
+
+                document.getElementById('card-face-title').innerText = "Register Face";
+                document.getElementById('card-face-desc').innerText = "Record live 3D facial mesh descriptor into SQLite database.";
+                document.getElementById('card-pass-title').innerText = "Set Password / OTP";
+
+                document.getElementById('face-scanner-title').innerText = "Enroll Facial Biometrics";
+                document.getElementById('face-scanner-desc').innerText = "Align face to record biometric template into SQLite database";
+                document.getElementById('btn-manual-face-action').innerText = "CAPTURE & ENROLL FACE";
+            }
+
+            backToStep(1);
+        }
+
+
+        // ═══════════════════════════════════════════════════════════
+        // SEPARATE REGISTRATION: INSTITUTION vs AICTE MEMBER
+        // ═══════════════════════════════════════════════════════════
+        const REG_ON  = "py-2 rounded-xl border text-xs font-semibold transition-all border-cyan-400 bg-cyan-500/20 text-cyan-200";
+        const REG_OFF = "py-2 rounded-xl border text-xs font-semibold transition-all border-slate-700 bg-slate-900/70 text-slate-400 hover:text-white";
+        function setRegType(type) {
+            window.appState.regType = type;
+            document.getElementById('btn-reg-institution').className = type === 'institution' ? REG_ON : REG_OFF;
+            document.getElementById('btn-reg-member').className = type === 'member' ? REG_ON : REG_OFF;
+            document.getElementById('fields-institution').classList.toggle('hidden', type !== 'institution');
+            document.getElementById('fields-member').classList.toggle('hidden', type !== 'member');
+            document.getElementById('input-full-name').placeholder = type === 'institution' ? 'Contact person full name' : 'Your full name';
+            document.getElementById('reg-type-hint').innerText = type === 'institution'
+                ? 'For applicant colleges: submit applications, reply to deficiencies, upload documents and undertakings. Access is instant.'
+                : 'For AICTE officers and committee members (EVC, SAC/SHC, Scrutiny, Regional, Bureau). A System Admin must approve your account before you can open the portal.';
+        }
+        async function loadRegistrationOptions() {
+            try {
+                const r = await fetch('/api/auth/registration-options'); const d = await r.json();
+                document.getElementById('reg-mem-role').innerHTML = d.roles.map(x => `<option value="${x.key}">${x.label}</option>`).join('');
+                document.getElementById('reg-mem-region').innerHTML = '<option value="">Select region</option>' + d.regions.map(x => `<option>${x}</option>`).join('');
+            } catch (e) {}
+        }
+        // Collect + validate the type-specific fields; returns an object or null (after showing a toast)
+        function collectRegProfile() {
+            const v = id => document.getElementById(id).value.trim();
+            if (window.appState.regType === 'institution') {
+                if (v('reg-inst-name').length < 3) { showToast("Please enter the institution name", "error"); return null; }
+                return { accountType: 'institution', institutionName: v('reg-inst-name'), aicteId: v('reg-inst-aicte'), phone: v('reg-inst-phone'), contactPerson: v('reg-inst-contact') };
+            }
+            if (v('reg-mem-empid').length < 3) { showToast("Please enter your AICTE employee / member ID", "error"); return null; }
+            return { accountType: 'member', requestedRole: v('reg-mem-role'), employeeId: v('reg-mem-empid'), region: v('reg-mem-region'), designation: v('reg-mem-designation'), organisation: v('reg-mem-org') };
+        }
+        loadRegistrationOptions();
+
+        // STEP NAVIGATION CONTROLLER
+        function backToStep(stepNumber) {
+            window.appState.currentStep = stepNumber;
+
+            const viewCreds = document.getElementById('view-step-credentials');
+            const viewCards = document.getElementById('view-step-gesture-cards');
+            const viewScanner = document.getElementById('view-face-scanner');
+            const viewPass = document.getElementById('view-password-otp-form');
+            const viewDash = document.getElementById('view-dashboard');
+
+            viewCreds.classList.add('hidden');
+            viewCards.classList.add('hidden');
+            viewScanner.classList.add('hidden');
+            viewPass.classList.add('hidden');
+            viewDash.classList.add('hidden');
+
+            updateStepBadges(stepNumber);
+
+            if (stepNumber === 1) {
+                viewCreds.classList.remove('hidden');
+                document.getElementById('main-title').innerText = window.appState.currentMode === 'login' ? "Client Account Login" : "New User Registration";
+                document.getElementById('main-subtitle').innerText = "Step 1: Enter your identification details to proceed";
+            } else if (stepNumber === 2) {
+                viewCards.classList.remove('hidden');
+                document.getElementById('main-title').innerText = "Gesture Method Selection";
+                document.getElementById('main-subtitle').innerHTML = `<i class="fa-solid fa-hand-pointer text-cyan-400 animate-bounce"></i> Point finger tip steadily over an option to select, or click directly.`;
+                resetHoverProgress();
+            } else if (stepNumber === 3) {
+                if (window.appState.selectedMethod === 'face') {
+                    viewScanner.classList.remove('hidden');
+                    document.getElementById('main-title').innerText = window.appState.currentMode === 'register' ? "Enroll Facial Biometrics" : "Face Unlock";
+                    document.getElementById('main-subtitle').innerText = "Step 3: Align your face within the camera target frame";
+                } else {
+                    viewPass.classList.remove('hidden');
+                    document.getElementById('main-title').innerText = "Security Credentials";
+                    document.getElementById('main-subtitle').innerText = "Step 3: Enter password or request 6-digit email OTP";
+                }
+            } else if (stepNumber === 4) {
+                viewDash.classList.remove('hidden');
+            }
+        }
+
+        function updateStepBadges(step) {
+            const b1 = document.getElementById('step-badge-1');
+            const b2 = document.getElementById('step-badge-2');
+            const b3 = document.getElementById('step-badge-3');
+
+            const activeClass = "flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-cyan-500/20 border border-cyan-400 text-cyan-300 font-bold text-[11px]";
+            const inactiveClass = "flex items-center gap-1 px-2.5 py-0.5 rounded-full bg-slate-900/60 border border-slate-800 text-slate-500 text-[11px]";
+
+            b1.className = step >= 1 ? activeClass : inactiveClass;
+            b2.className = step >= 2 ? activeClass : inactiveClass;
+            b3.className = step >= 3 ? activeClass : inactiveClass;
+        }
+
+        // STEP 1 SUBMIT: ENTER EMAIL & NAME
+        function handleCredentialsProceed(e) {
+            e.preventDefault();
+
+            const email = document.getElementById('input-email-address').value.trim();
+            const name = document.getElementById('input-full-name').value.trim() || email.split('@')[0];
+
+            if (!email) {
+                showToast("Please enter a valid email address", "error");
+                return;
+            }
+
+            if (window.appState.currentMode === 'register') {
+                const prof = collectRegProfile();
+                if (!prof) return;
+                window.appState.regProfile = prof;
+            } else { window.appState.regProfile = {}; }
+            window.appState.userData = { name, email };
+            document.getElementById('chip-user-name').innerText = name;
+            document.getElementById('chip-user-email').innerText = email;
+
+            playAudioChirp(520, 0.1);
+            showToast(`Target identified: ${name} (${email})`, "info");
+
+            backToStep(2);
+        }
+
+        // DIRECT 1-GLANCE FACE UNLOCK (Without typing email)
+        function launchDirectFaceUnlock() {
+            window.appState.userData = { name: "Detecting...", email: "" };
+            window.appState.selectedMethod = 'face';
+            document.getElementById('face-scanner-title').innerText = "1-Glance Face Identification";
+            document.getElementById('face-scanner-desc').innerText = "Scanning database for matching facial profile...";
+            backToStep(3);
+        }
+
+        // STEP 2: CARD SELECTION (VIA GESTURE OR CLICK)
+        function handleCardSelection(method) {
+            window.appState.selectedMethod = method;
+            playAudioChirp(700, 0.12);
+
+            if (method === 'face') {
+                backToStep(3);
+                showToast("Face Biometric Scanner activated", "info");
+            } else {
+                backToStep(3);
+                showToast("Security credentials form ready", "info");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // BIOMETRIC FEATURE EXTRACTION & MATCHING
+        // ═══════════════════════════════════════════════════════════
+
+        // Extract normalized facial descriptor from MediaPipe FaceMesh
+        function extractFaceDescriptor(landmarks) {
+            if (!landmarks || landmarks.length < 400) return null;
+
+            const pNose = landmarks[1];
+            const pLeftEye = landmarks[33];
+            const pRightEye = landmarks[263];
+
+            // Inter-ocular distance normalization factor
+            const eyeDist = Math.hypot(pRightEye.x - pLeftEye.x, pRightEye.y - pLeftEye.y) || 0.1;
+
+            const sampleIndices = [
+                1, 2, 4, 5, 19, 94,        // Nose
+                33, 133, 159, 145,         // Left eye
+                263, 362, 386, 374,        // Right eye
+                61, 291, 0, 17, 13, 14,    // Lips
+                152, 148, 176, 377, 400,   // Chin & jaw
+                70, 105, 300, 334          // Eyebrows
+            ];
+
+            const descriptor = [];
+            sampleIndices.forEach(idx => {
+                const pt = landmarks[idx];
+                const dx = (pt.x - pNose.x) / eyeDist;
+                const dy = (pt.y - pNose.y) / eyeDist;
+                const dz = (pt.z - pNose.z) / eyeDist;
+                descriptor.push(Number(dx.toFixed(4)), Number(dy.toFixed(4)), Number(dz.toFixed(4)));
+            });
+
+            return descriptor;
+        }
+
+        // Live face scanner evaluation tick
+        let lastAutoVerifyTime = 0;
+        let scanProgress = 0;
+
+        function processFaceScanTick(landmarks) {
+            const descriptor = extractFaceDescriptor(landmarks);
+            if (!descriptor) return;
+
+            const progressBar = document.getElementById('face-match-bar');
+            const percentLabel = document.getElementById('face-match-percent');
+            const statusMsg = document.getElementById('face-scan-status-msg');
+
+            if (window.appState.currentMode === 'register') {
+                scanProgress = Math.min(scanProgress + 10, 100);
+                progressBar.style.width = scanProgress + '%';
+                percentLabel.innerText = scanProgress + '%';
+                statusMsg.innerHTML = `<i class="fa-solid fa-check text-emerald-400 mr-1"></i> FACIAL MAP READY. CLICK CAPTURE TO STORE.`;
+                statusMsg.className = "text-xs font-mono text-emerald-400 mt-2.5 font-bold";
+            } else {
+                // In login mode, periodically verify with backend
+                const now = Date.now();
+                if (now - lastAutoVerifyTime > 1600) {
+                    lastAutoVerifyTime = now;
+                    verifyFaceWithBackend(descriptor, false);
+                }
+            }
+        }
+
+        // VERIFY FACE WITH BACKEND
+        async function verifyFaceWithBackend(descriptor, isManual = false) {
+            const progressBar = document.getElementById('face-match-bar');
+            const percentLabel = document.getElementById('face-match-percent');
+            const statusMsg = document.getElementById('face-scan-status-msg');
+
+            const email = window.appState.userData.email;
+
+            try {
+                let endpoint = email ? '/api/face/verify' : '/api/face/detect-unlock';
+                let payload = email ? { email, descriptor } : { descriptor };
+
+                const response = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const result = await response.json();
+
+                if (result.matched) {
+                    const conf = result.confidence || 96;
+                    progressBar.style.width = conf + '%';
+                    percentLabel.innerText = conf + '%';
+                    statusMsg.innerText = `MATCH CONFIRMED: ${result.user.name} (${conf}%)`;
+                    statusMsg.className = "text-xs font-mono text-emerald-400 mt-2.5 font-bold";
+
+                    playAudioChirp(880, 0.25);
+                    showToast(result.message || "Face recognized! Unlocking system...", "success");
+
+                    setTimeout(() => {
+                        grantAccess(result.user, "FACIAL BIOMETRICS", result.token);
+                    }, 400);
+                } else {
+                    const conf = result.confidence || 30;
+                    progressBar.style.width = conf + '%';
+                    percentLabel.innerText = conf + '%';
+                    statusMsg.innerText = result.error || "Face not recognized. Align clearly.";
+                    statusMsg.className = "text-xs font-mono text-amber-400 mt-2.5";
+                    if (isManual) {
+                        showToast(result.error || "Face not recognized. Try enrolling first or use password.", "error");
+                    }
+                }
+            } catch (err) {
+                console.error("Face Verify Request Error:", err);
+                if (isManual) showToast("Backend connection issue", "error");
+            }
+        }
+
+        // MANUAL FACE CAPTURE BUTTON
+        async function executeFaceCaptureAction() {
+            if (!window.appState.faceLandmarks) {
+                showToast("No face detected in camera viewport! Please look into camera.", "error");
+                return;
+            }
+
+            const descriptor = extractFaceDescriptor(window.appState.faceLandmarks);
+            if (!descriptor) {
+                showToast("Could not calculate facial descriptor. Look directly at camera.", "error");
+                return;
+            }
+
+            if (window.appState.currentMode === 'register') {
+                // Register face in backend SQLite DB
+                const { name, email } = window.appState.userData;
+                try {
+                    const res = await fetch('/api/face/register', {
+                        method: 'POST',
+                        headers: Object.assign({ 'Content-Type': 'application/json' }, window.appState.authToken ? { 'Authorization': 'Bearer ' + window.appState.authToken } : {}),
+                        body: JSON.stringify(Object.assign({ email, name, descriptor }, window.appState.regProfile || {}))
+                    });
+                    const data = await res.json();
+                    if (res.ok) {
+                        showToast(`Face enrolled successfully for ${data.user.name}!`, "success");
+                        playAudioChirp(900, 0.2);
+                        grantAccess(data.user, "FACIAL BIOMETRICS ENROLLED", data.token, data.status);
+                        fetchDatabaseUsers();
+                    } else {
+                        showToast(data.error || "Failed to register face template", "error");
+                    }
+                } catch (e) {
+                    showToast("Error saving face to database", "error");
+                }
+            } else {
+                // Verify
+                verifyFaceWithBackend(descriptor, true);
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // PASSWORD & OTP AUTHENTICATION
+        // ═══════════════════════════════════════════════════════════
+
+        // REQUEST OTP CODE FROM BACKEND
+        async function requestOTP() {
+            const email = window.appState.userData.email;
+            if (!email) {
+                showToast("Please enter an email address first", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-request-otp');
+            const alertBox = document.getElementById('otp-alert-box');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> SENDING...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/send-otp', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({
+                        email,
+                        name: window.appState.userData.name,
+                        purpose: window.appState.currentMode
+                    })
+                });
+
+                const data = await res.json();
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-1"></i> [ RESEND CODE ]`;
+                btn.disabled = false;
+
+                if (res.ok) {
+                    playAudioChirp(700, 0.15);
+                    if (data.deliveredToGmail) {
+                        showToast(`✅ Live OTP sent to ${email} inbox!`, "success");
+                        alertBox.innerHTML = `
+                            <div class="text-emerald-400 font-bold mb-1">
+                                <i class="fa-solid fa-envelope-circle-check mr-1"></i> Dispatched to Gmail inbox!
+                            </div>
+                            <span class="text-slate-300">Check inbox/spam at <strong>${email}</strong></span>
+                        `;
+                    } else {
+                        // Simulated / local OTP notice
+                        showToast(`🔑 OTP Generated: ${data.debugOtp}`, "info");
+                        alertBox.innerHTML = `
+                            <div class="text-amber-300 font-bold mb-0.5">
+                                <i class="fa-solid fa-bell mr-1"></i> Generated OTP: <span class="text-cyan-300 font-mono text-base px-2 py-0.5 rounded bg-cyan-950 border border-cyan-500/40">${data.debugOtp}</span>
+                            </div>
+                            <span class="text-slate-400 text-[10px]">
+                                Real Gmail dispatch requires Google App Password. Click <a href="javascript:void(0)" onclick="openSmtpModal()" class="text-cyan-400 underline font-bold">⚙️ GMAIL SMTP</a> to configure.
+                            </span>
+                        `;
+                    }
+
+                    if (data.debugOtp) {
+                        document.getElementById('input-auth-otp').value = data.debugOtp;
+                    }
+                } else {
+                    showToast(data.error || "Failed to send OTP", "error");
+                }
+            } catch (err) {
+                btn.innerHTML = `<i class="fa-solid fa-paper-plane mr-1"></i> [ SEND CODE ]`;
+                btn.disabled = false;
+                showToast("Backend connection error", "error");
+            }
+        }
+
+        // SUBMIT PASSWORD OR OTP AUTHENTICATION
+        async function handleAuthSubmit(e) {
+            e.preventDefault();
+
+            const password = document.getElementById('input-auth-password').value;
+            const otp = document.getElementById('input-auth-otp').value.trim();
+            const { name, email } = window.appState.userData;
+
+            if (!password && !otp) {
+                showToast("Please enter a password or 6-digit OTP code", "error");
+                return;
+            }
+
+            const submitBtn = document.getElementById('btn-submit-credentials');
+            submitBtn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-2"></i> VERIFYING...`;
+            submitBtn.disabled = true;
+
+            try {
+                let endpoint = window.appState.currentMode === 'register' ? '/api/auth/register' : '/api/auth/login';
+                const payload = Object.assign({ email, name, password, otp }, window.appState.currentMode === 'register' ? (window.appState.regProfile || {}) : {});
+
+                const res = await fetch(endpoint, {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify(payload)
+                });
+
+                const data = await res.json();
+                submitBtn.innerHTML = `VERIFY & UNLOCK`;
+                submitBtn.disabled = false;
+
+                if (res.ok) {
+                    playAudioChirp(840, 0.2);
+                    showToast(data.message || "Authentication successful!", "success");
+                    const methodLabel = otp ? "ONE-TIME PASSWORD (OTP)" : "PASSWORD CREDENTIAL";
+                    grantAccess(data.user, methodLabel, data.token, data.status);
+                    fetchDatabaseUsers();
+                } else {
+                    showToast(data.error || "Authentication failed", "error");
+                }
+            } catch (err) {
+                submitBtn.innerHTML = `VERIFY & UNLOCK`;
+                submitBtn.disabled = false;
+                showToast("Server error during verification", "error");
+            }
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // UNLOCKED DASHBOARD & SESSION MANAGEMENT
+        // ═══════════════════════════════════════════════════════════
+
+        function grantAccess(user, authMethod, token, regStatus) {
+            window.appState.authenticatedUser = user;
+            window.appState.authToken = token;
+
+            backToStep(4);
+
+            document.getElementById('main-title').innerText = "System Unlocked";
+            document.getElementById('main-subtitle').innerHTML = `<span class="text-emerald-400 font-bold"><i class="fa-solid fa-shield-halved mr-1"></i> Biometric Session Active</span>`;
+
+            document.getElementById('dash-user-name').innerText = user.name || "Authenticated User";
+            document.getElementById('dash-user-email').innerText = user.email || "user@domain.com";
+            document.getElementById('dash-avatar-initial').innerText = (user.name || 'U').charAt(0).toUpperCase();
+            document.getElementById('dash-auth-method').innerText = authMethod;
+            document.getElementById('dash-session-id').innerText = token ? 'JWT-' + token.slice(-10).toUpperCase() : '0x' + Math.random().toString(16).substr(2, 8).toUpperCase();
+
+            const enterBtn = document.getElementById('btn-enter-portal');
+            clearTimeout(window._portalTimer);
+            if (regStatus === 'Pending' || !token) {
+                try { localStorage.removeItem('aicte_session'); } catch (e) {}
+                if (enterBtn) enterBtn.classList.add('hidden');
+                document.getElementById('main-title').innerText = "Registration Received";
+                document.getElementById('main-subtitle').innerHTML = '<span class="text-amber-300 font-bold"><i class="fa-solid fa-hourglass-half mr-1"></i> Awaiting System Admin approval — you can sign in once your member account is approved.</span>';
+            } else if (token) {
+                try {
+                    localStorage.setItem('aicte_session', JSON.stringify({ user, token, method: authMethod, at: Date.now() }));
+                } catch (e) {}
+                if (enterBtn) enterBtn.classList.remove('hidden');
+                document.getElementById('main-subtitle').innerHTML += ' <span class="text-orange-300 font-semibold">&middot; Opening AICTE Portal…</span>';
+                window._portalTimer = setTimeout(goToPortal, 2200);
+            }
+        }
+
+        function goToPortal() {
+            clearTimeout(window._portalTimer);
+            window.location.href = '/dashboard';
+        }
+
+        function enrollFaceFromDashboard() {
+            clearTimeout(window._portalTimer);
+            window.appState.currentMode = 'register';
+            window.appState.selectedMethod = 'face';
+            window.appState.userData = {
+                name: window.appState.authenticatedUser.name,
+                email: window.appState.authenticatedUser.email
+            };
+            backToStep(3);
+        }
+
+        function logoutSession() {
+            window.appState.authenticatedUser = null;
+            window.appState.authToken = null;
+            clearTimeout(window._portalTimer);
+            try { localStorage.removeItem('aicte_session'); } catch (e) {}
+            setAuthMode('login');
+            showToast("Session terminated. Logged out.", "info");
+        }
+
+        // ═══════════════════════════════════════════════════════════
+        // DATABASE AUDIT MODAL & STATUS
+        // ═══════════════════════════════════════════════════════════
+
+        async function checkBackendHealth() {
+            try {
+                const res = await fetch('/api/health');
+                if (res.ok) {
+                    document.getElementById('backend-status').innerText = 'SQLITE ACTIVE';
+                    document.getElementById('backend-status').className = 'text-emerald-400 font-bold';
+                }
+            } catch (e) {
+                document.getElementById('backend-status').innerText = 'OFFLINE';
+                document.getElementById('backend-status').className = 'text-amber-400 font-bold';
+            }
+        }
+
+        async function checkSmtpStatus() {
+            try {
+                const res = await fetch('/api/auth/smtp-status');
+                const data = await res.json();
+                const badge = document.getElementById('btn-smtp-indicator');
+                const text = document.getElementById('smtp-badge-text');
+                const banner = document.getElementById('smtp-status-banner');
+
+                if (data.isConfigured) {
+                    badge.className = "flex items-center gap-1.5 bg-emerald-950/60 hover:bg-emerald-900/60 px-2.5 py-1 rounded-md border border-emerald-500/50 text-emerald-300 transition-all text-xs";
+                    text.innerText = "GMAIL ACTIVE";
+                    banner.className = "p-2.5 rounded-xl bg-emerald-950/30 border border-emerald-500/40 text-emerald-200";
+                    banner.innerHTML = `<div class="font-bold flex items-center gap-1.5"><i class="fa-solid fa-circle-check text-emerald-400"></i> Gmail SMTP Connected: ${data.user}</div><p class="text-[11px] text-slate-300 mt-1">Live OTP emails will be delivered directly to the user's Gmail inbox.</p>`;
+                } else {
+                    badge.className = "flex items-center gap-1.5 bg-slate-900 hover:bg-slate-800 px-2.5 py-1 rounded-md border border-amber-500/40 text-amber-300 transition-all text-xs";
+                    text.innerText = "GMAIL SMTP";
+                }
+            } catch (e) {}
+        }
+
+        async function saveSmtpConfig() {
+            const user = document.getElementById('smtp-input-user').value.trim();
+            const pass = document.getElementById('smtp-input-pass').value.trim();
+
+            if (!user || !pass) {
+                showToast("Please enter both Gmail address & 16-character App Password", "error");
+                return;
+            }
+
+            const btn = document.getElementById('btn-save-smtp');
+            btn.innerHTML = `<i class="fa-solid fa-spinner fa-spin mr-1"></i> VERIFYING...`;
+            btn.disabled = true;
+
+            try {
+                const res = await fetch('/api/auth/smtp-config', {
+                    method: 'POST',
+                    headers: { 'Content-Type': 'application/json' },
+                    body: JSON.stringify({ gmailUser: user, gmailPass: pass })
+                });
+
+                const data = await res.json();
+                btn.innerHTML = `VERIFY & SAVE`;
+                btn.disabled = false;
+
+                if (res.ok) {
+                    showToast("✅ Gmail SMTP Connected & Saved!", "success");
+                    checkSmtpStatus();
+                    setTimeout(closeSmtpModal, 700);
+                } else {
+                    showToast(data.error || "Gmail verification failed", "error");
+                }
+            } catch (err) {
+                btn.innerHTML = `VERIFY & SAVE`;
+                btn.disabled = false;
+                showToast("Server error verifying Gmail", "error");
+            }
+        }
+
+        async function fetchDatabaseUsers() {
+            try {
+                const res = await fetch('/api/auth/users');
+                const data = await res.json();
+                const users = data.users || [];
+
+                document.getElementById('stat-user-count').innerText = users.length;
+
+                const tbody = document.getElementById('table-users-body');
+                if (users.length === 0) {
+                    tbody.innerHTML = `<tr><td colspan="5" class="p-4 text-center text-slate-500">No users registered yet.</td></tr>`;
+                    return;
+                }
+
+                tbody.innerHTML = users.map(u => `
+                    <tr class="hover:bg-slate-800/40 transition-colors">
+                        <td class="p-2 font-bold text-cyan-300">#${u.id}</td>
+                        <td class="p-2 text-white">${escapeHtml(u.name)}</td>
+                        <td class="p-2 text-slate-400">${escapeHtml(u.email)}</td>
+                        <td class="p-2">
+                            ${u.hasFace ? '<span class="text-emerald-400 font-bold"><i class="fa-solid fa-circle-check mr-1"></i>ENROLLED</span>' : '<span class="text-slate-500">None</span>'}
+                        </td>
+                        <td class="p-2">
+                            ${u.hasPassword ? '<span class="text-cyan-400 font-bold"><i class="fa-solid fa-lock mr-1"></i>BCRYPT</span>' : '<span class="text-slate-500">None</span>'}
+                        </td>
+                    </tr>
+                `).join('');
+            } catch (e) {
+                console.error("Fetch Users Error:", e);
+            }
+        }
+
+        function openUsersModal() {
+            fetchDatabaseUsers();
+            document.getElementById('modal-users').classList.remove('hidden');
+        }
+
+        function closeUsersModal() {
+            document.getElementById('modal-users').classList.add('hidden');
+        }
+
+        function openSmtpModal() {
+            checkSmtpStatus();
+            document.getElementById('modal-smtp').classList.remove('hidden');
+        }
+
+        function closeSmtpModal() {
+            document.getElementById('modal-smtp').classList.add('hidden');
+        }
+
+        // Close modals on Escape key
+        window.addEventListener('keydown', (e) => {
+            if (e.key === 'Escape') {
+                closeUsersModal();
+                closeSmtpModal();
+            }
+        });
+
+        // TOAST NOTIFICATIONS
+        function showToast(message, type = "info") {
+            const container = document.getElementById('toast-container');
+            const toast = document.createElement('div');
+
+            let icon = 'fa-info-circle text-cyan-400';
+            let border = 'border-cyan-500/50';
+
+            if (type === 'success') {
+                icon = 'fa-check-circle text-emerald-400';
+                border = 'border-emerald-500/50';
+            } else if (type === 'error') {
+                icon = 'fa-triangle-exclamation text-red-400';
+                border = 'border-red-500/50';
+            }
+
+            toast.className = `p-3 rounded-xl bg-slate-900/95 backdrop-blur-md border ${border} shadow-xl flex items-center gap-2.5 text-xs text-white transform transition-all duration-300 translate-y-2 opacity-0 pointer-events-auto`;
+            toast.innerHTML = `<i class="fa-solid ${icon} text-base flex-shrink-0"></i> <span>${escapeHtml(message)}</span>`;
+
+            container.appendChild(toast);
+
+            requestAnimationFrame(() => {
+                toast.classList.remove('translate-y-2', 'opacity-0');
+            });
+
+            setTimeout(() => {
+                toast.classList.add('opacity-0', 'translate-y-2');
+                setTimeout(() => toast.remove(), 300);
+            }, 4500);
+        }
+
+        function escapeHtml(text) {
+            if (!text) return '';
+            const div = document.createElement('div');
+            div.textContent = text;
+            return div.innerHTML;
+        }
+    </script>
+</body>
+</html>

@@ -1,0 +1,10 @@
+{
+  "name": "aicte-combined-authority-portal-ps26262",
+  "version": "1.0.0",
+  "private": true,
+  "description": "Combined AICTE Biometric Authentication + PS 26262 6-Role Dashboard with Strict Account & Data Isolation",
+  "scripts": {
+    "start": "node backend/server.js",
+    "dev": "node backend/server.js"
+  }
+}

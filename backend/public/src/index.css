@@ -1,0 +1,179 @@
+/* ==========================================================================
+   Official AICTE (aicte.gov.in) & Rishi Heritage Design System (PS 26262)
+   Merged with changed_files Clean Spacious Layout & Royal Navy / Saffron Theme
+   - Royal Navy (#0B2545), Institutional Blue (#2456D6), Saffron Gold (#D97706),
+     Emerald (#15803D), Clean Light Surface (#F4F6FB) & Crisp White Cards (#FFFFFF)
+   ========================================================================== */
+
+:root {
+  --aicte-navy: #0b2545;
+  --aicte-royal: #13315c;
+  --aicte-blue: #2456d6;
+  --aicte-blue-soft: #eaf0ff;
+  --aicte-saffron: #d97706;
+  --aicte-gold: #c28116;
+  --aicte-green: #15803d;
+  --aicte-bg: #f4f6fb;
+  --aicte-card: #ffffff;
+  --aicte-border: #e1e6ef;
+  --ink: #172238;
+  --muted: #66738a;
+}
+
+* {
+  box-sizing: border-box;
+}
+
+body {
+  margin: 0;
+  font-family: 'DM Sans', 'Inter', -apple-system, BlinkMacSystemFont, sans-serif;
+  background-color: var(--aicte-bg);
+  color: var(--ink);
+  overflow-x: hidden;
+  line-height: 1.55;
+}
+
+/* Tricolor Top Strip like aicte.gov.in */
+.tricolor-bar {
+  height: 4px;
+  background: linear-gradient(90deg, #FF9933 0%, #FF9933 33.33%, #FFFFFF 33.33%, #FFFFFF 66.66%, #138808 66.66%, #138808 100%);
+}
+
+/* Traditional Indian Heritage Header Pattern (sih project me.zip) */
+.aicte-heritage-header {
+  background: linear-gradient(135deg, #ffffff 0%, #fffaf0 65%, #fef3c7 100%);
+  border-bottom: 3px solid #d97706;
+}
+
+/* Royal Navy Banner (sih project me.zip Rishi & Campus Showcase) */
+.aicte-hero-banner {
+  background: linear-gradient(115deg, #071930 0%, #0b2545 50%, #153e70 100%);
+}
+
+/* Subtle Building Hero Option */
+.aicte-login-building-hero {
+  position: relative;
+  background-image:
+    linear-gradient(115deg, rgba(7, 25, 48, 0.92) 0%, rgba(11, 37, 69, 0.85) 52%, rgba(19, 49, 92, 0.90) 100%),
+    url('/assets/building-background.jpg');
+  background-size: cover;
+  background-position: center;
+}
+
+/* Clean Scrollbars */
+::-webkit-scrollbar {
+  width: 7px;
+  height: 7px;
+}
+
+::-webkit-scrollbar-track {
+  background: #f1f5f9;
+}
+
+::-webkit-scrollbar-thumb {
+  background: #cbd5e1;
+  border-radius: 9999px;
+}
+
+::-webkit-scrollbar-thumb:hover {
+  background: #94a3b8;
+}
+
+/* Face Recognition Green Frame Sweep */
+@keyframes faceFrameScan {
+  0% {
+    top: 8%;
+    opacity: 0.75;
+  }
+  50% {
+    top: 88%;
+    opacity: 1;
+  }
+  100% {
+    top: 8%;
+    opacity: 0.75;
+  }
+}
+
+.face-scan-bar {
+  position: absolute;
+  left: 10%;
+  right: 10%;
+  height: 2px;
+  background: linear-gradient(90deg, transparent, #16a34a, #22c55e, #16a34a, transparent);
+  box-shadow: 0 0 8px rgba(22, 163, 74, 0.55);
+  animation: faceFrameScan 2.8s ease-in-out infinite;
+  pointer-events: none;
+}
+
+/* Smooth Graph Bar Grow Animation */
+@keyframes smoothBarGrow {
+  from {
+    transform: scaleY(0.15);
+    opacity: 0.3;
+  }
+  to {
+    transform: scaleY(1);
+    opacity: 1;
+  }
+}
+
+.smooth-bar-col {
+  transform-origin: bottom;
+  animation: smoothBarGrow 0.55s cubic-bezier(0.22, 1, 0.36, 1) forwards;
+}
+
+/* Donut Chart Ring Helper */
+.donut-chart {
+  border-radius: 50%;
+  position: relative;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.donut-chart::after {
+  content: "";
+  position: absolute;
+  width: 66%;
+  height: 66%;
+  background: #ffffff;
+  border-radius: 50%;
+}
+
+/* Clean Notice & Demo Box classes merged from changed_files/styles.css */
+.notice-banner {
+  padding: 12px 16px;
+  border-radius: 12px;
+  font-size: 13px;
+  font-weight: 500;
+  background: #eaf0ff;
+  color: #214ca6;
+  border: 1px solid #c9dafc;
+}
+
+.notice-banner.error {
+  background: #ffedeb;
+  color: #b42318;
+  border-color: #ffd4d1;
+}
+
+.notice-banner.success {
+  background: #e6f7ed;
+  color: #18794e;
+  border-color: #c3e6cb;
+}
+
+.notice-banner.warning {
+  background: #fff2d7;
+  color: #9a6100;
+  border-color: #fde68a;
+}
+
+.demo-box {
+  margin-top: 16px;
+  padding: 14px;
+  background: #f8fafc;
+  border: 1px dashed #cfd7e4;
+  border-radius: 12px;
+}

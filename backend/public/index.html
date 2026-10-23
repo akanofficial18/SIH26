@@ -1,0 +1,153 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>AICTE Approval &amp; Compliance Management System</title>
+<meta name="description" content="All India Council for Technical Education — Approval &amp; Compliance Management System. Secure biometric sign-in and role-based approval workflow.">
+<link rel="icon" type="image/png" href="/assets/favicon.png">
+<link rel="preconnect" href="https://fonts.googleapis.com"><link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=Source+Serif+4:wght@600;700&family=Noto+Sans+Devanagari:wght@400;600;700&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="/css/aicte.css">
+</head>
+<body>
+<div class="tricolour"></div>
+<div class="utility"><div class="wrap">
+  <div><a href="#main">Skip to main content</a><a href="#about">About</a><a href="#help">Help &amp; Support</a></div>
+  <div class="right">
+    <span>Text size:</span>
+    <button id="fs-minus" aria-label="Decrease text size">A−</button><button id="fs-reset" aria-label="Reset text size">A</button><button id="fs-plus" aria-label="Increase text size">A+</button>
+  </div>
+</div></div>
+
+<header class="masthead"><div class="wrap">
+  <a class="brand" href="/" aria-label="AICTE home">
+    <img src="/assets/aicte-logo.png" alt="AICTE logo">
+    <div>
+      <div class="t1 hi">अखिल भारतीय तकनीकी शिक्षा परिषद</div>
+      <div class="t2">All India Council for Technical Education</div>
+      <div class="t3">Ministry of Education, Government of India</div>
+    </div>
+  </a>
+  <div class="mast-actions">
+    <a class="btn btn-outline" href="/login?register=institution">Register</a>
+    <a class="btn btn-primary" href="/login">Portal Login &rarr;</a>
+  </div>
+</div></header>
+
+<nav class="nav" aria-label="Main"><div class="wrap">
+  <a class="on" href="/">Home</a>
+  <a href="#about">About the Portal</a>
+  <a href="#workflow">Approval Process</a>
+  <a href="#workspaces">Workspaces</a>
+  <a href="#help">Help</a>
+  <span class="spacer"></span>
+  <a href="/login?register=institution">Institution Registration</a>
+  <a href="/login?register=member">Member Registration</a>
+  <a href="/login">Login</a>
+</div></nav>
+
+<div class="ticker"><div class="wrap">
+  <span class="tag">LATEST</span>
+  <div class="track"><span>Approval Process Handbook (APH) 2026–27 is now live &nbsp;•&nbsp; Institutions must respond to deficiencies within the prescribed window &nbsp;•&nbsp; EVC visit schedules are published in the portal &nbsp;•&nbsp; Upload valid fire-safety and land documents before expiry &nbsp;•&nbsp; Sign in with Face recognition, Gesture or Password + OTP</span></div>
+</div></div>
+
+<main id="main">
+<section class="hero" id="home"><div class="inner">
+  <div class="sanskrit">योगः कर्मसु कौशलम्</div>
+  <span class="eyebrow">SMART APPROVALS. CLEAR COMPLIANCE.</span>
+  <h1>AICTE Approval &amp; <span>Compliance</span> Management System</h1>
+  <p class="lead">A smarter, simpler way to manage approvals, track applications and stay on top of compliance — one secure portal for institutions, the Bureau, Regional Offices and expert committees.</p>
+  <div class="cta">
+    <a class="btn btn-primary" href="/login">Login to Portal &rarr;</a>
+    <button class="btn btn-ghost" id="watchDemo">&#9654;&nbsp; How it works</button>
+  </div>
+  <div class="pillars">
+    <div class="pillar"><i>&#10227;</i><h3>Automated Workflow</h3><p>Stage-wise routing from submission to final approval.</p></div>
+    <div class="pillar"><i>&#9719;</i><h3>Real-time Tracking</h3><p>Follow every application and deadline in one place.</p></div>
+    <div class="pillar"><i>&#9826;</i><h3>Secure &amp; Transparent</h3><p>Biometric sign-in, role-based access, full audit trail.</p></div>
+    <div class="pillar"><i>&#9678;</i><h3>Compliance Monitoring</h3><p>Undertakings, document validity and escalations.</p></div>
+  </div>
+</div></section>
+
+<section class="block alt" id="workflow"><div class="container">
+  <h2 class="section-title">The Approval Journey</h2>
+  <p class="section-sub">Every application moves through the same accountable stages. Each stage belongs to a defined role and is recorded in the audit trail.</p>
+  <div class="flow">
+    <div class="step"><h4>Submission</h4><p>Institution applies &amp; uploads evidence</p></div>
+    <div class="step"><h4>Scrutiny</h4><p>Scrutiny Officer checks documents</p></div>
+    <div class="step"><h4>EVC Visit</h4><p>Expert panel scores 4 pillars</p></div>
+    <div class="step"><h4>SAC / SHC</h4><p>Bench hears &amp; recommends</p></div>
+    <div class="step"><h4>Competent Authority</h4><p>Decision on EoA / LoA</p></div>
+    <div class="step"><h4>Compliance</h4><p>Undertakings &amp; validity tracked</p></div>
+  </div>
+</div></section>
+
+<section class="block" id="about"><div class="container">
+  <h2 class="section-title">Approval Management, Made Simpler</h2>
+  <p class="section-sub">A central place to manage approvals, track progress and keep compliance information organised.</p>
+  <div class="cards">
+    <div class="card"><h3>One Clear Workflow</h3><p>Keep every approval step together and see exactly what needs your attention next, with overdue files escalated automatically.</p></div>
+    <div class="card"><h3>Secure Biometric Sign-in</h3><p>One login for everyone — face recognition, fingertip gestures or password with email OTP — backed by a SQLite database.</p></div>
+    <div class="card" id="help"><h3>Help &amp; Support</h3><p>Use the navigation above to find your workspace. Staff roles are assigned by the System Admin; institutions manage their own applications.</p></div>
+  </div>
+</div></section>
+
+<section class="block alt" id="workspaces"><div class="container">
+  <h2 class="section-title">One Portal, Role-based Workspaces</h2>
+  <p class="section-sub">After signing in, you are routed directly to your authenticated workspace. Each account is strictly isolated and only offers the actions and data its role is permitted to access.</p>
+  <div class="roles">
+    <div class="role">Institution</div><div class="role">Bureau Officer</div><div class="role">Bureau Head</div><div class="role">Regional Officer</div><div class="role">Scrutiny Officer</div>
+    <div class="role">EVC Member</div><div class="role">SAC Member</div><div class="role">SHC Member</div><div class="role">Member Secretary</div><div class="role">Chairman</div><div class="role">System Admin</div><div class="role">Auditor</div>
+  </div>
+</div></section>
+
+<div class="cta-band">
+  <h2>Ready to continue?</h2>
+  <p>Sign in securely to open your AICTE workspace.</p>
+  <a class="btn btn-primary" href="/login">Login to Portal &rarr;</a>
+</div>
+</main>
+
+<footer class="site">
+  <div class="wrap">
+    <div>
+      <div class="logo-row"><img src="/assets/aicte-logo.png" alt=""> AICTE</div>
+      <p>All India Council for Technical Education<br>Nelson Mandela Marg, Vasant Kunj, New Delhi – 110070</p>
+    </div>
+    <div><h5>Portal</h5><a href="/login">Login</a><a href="/login?register=institution">Institution Registration</a><a href="/login?register=member">Member Registration</a><a href="#workflow">Approval Process</a><a href="#workspaces">Workspaces</a></div>
+    <div><h5>Information</h5><a href="#about">About the Portal</a><a href="#help">Help &amp; Support</a><a href="https://www.aicte-india.org" target="_blank" rel="noopener">AICTE official website</a></div>
+  </div>
+  <div class="legal">Prototype for academic use (SIH 2026 • PS 26262). Decisions remain with authorized human officials. All records shown are fictional demo data.</div>
+</footer>
+
+<div class="modal" id="demoModal" role="dialog" aria-modal="true" aria-labelledby="demoTitle"><div class="modal-content">
+  <button class="close-button" id="closeDemo" aria-label="Close">&times;</button>
+  <h2 id="demoTitle">How the portal works</h2>
+  <ol>
+    <li>Click <b>Login to Portal</b> and sign in with your face, a fingertip gesture or password + OTP.</li>
+    <li>You land directly on your role-bound PS 26262 dashboard workspace with strict account and data isolation.</li>
+    <li>Work your queue: scrutinise, review, route, approve or revert — every action is audit-logged.</li>
+    <li>Track compliance, document validity, EVC visits and escalations from the sidebar.</li>
+  </ol>
+  <a class="btn btn-primary" href="/login">Go to login &rarr;</a>
+</div></div>
+
+<script>
+(function(){
+  var m=document.getElementById('demoModal');
+  document.getElementById('watchDemo').onclick=function(){m.classList.add('show')};
+  document.getElementById('closeDemo').onclick=function(){m.classList.remove('show')};
+  m.addEventListener('click',function(e){if(e.target===m)m.classList.remove('show')});
+  document.addEventListener('keydown',function(e){if(e.key==='Escape')m.classList.remove('show')});
+  // text size controls (accessibility, as on the AICTE site)
+  var size=100; try{size=parseInt(localStorage.getItem('aicte_fs')||'100',10)||100}catch(e){}
+  function apply(){document.documentElement.style.fontSize=size+'%';try{localStorage.setItem('aicte_fs',size)}catch(e){}}
+  apply();
+  document.getElementById('fs-plus').onclick=function(){size=Math.min(125,size+5);apply()};
+  document.getElementById('fs-minus').onclick=function(){size=Math.max(90,size-5);apply()};
+  document.getElementById('fs-reset').onclick=function(){size=100;apply()};
+})();
+</script>
+</body>
+</html>
